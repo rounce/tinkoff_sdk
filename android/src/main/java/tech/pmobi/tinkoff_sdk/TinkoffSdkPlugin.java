@@ -151,10 +151,15 @@ public class TinkoffSdkPlugin implements MethodCallHandler, FlutterPlugin, Activ
 
         if (data != null && !success) {
             final Bundle bundle = data.getExtras();
-            final AcquiringApiException exception = (AcquiringApiException) bundle.get(TinkoffAcquiring.EXTRA_ERROR);
-                message = exception != null
-                    ? exception.getLocalizedMessage()
-                    : "Неизвестная ошибка";
+            try {
+                final AcquiringApiException exception = (AcquiringApiException) bundle.get(TinkoffAcquiring.EXTRA_ERROR);
+                    message = exception != null
+                        ? exception.getLocalizedMessage()
+                        : "Неизвестная ошибка";
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                message = "Неизвестная ошибка";
+            }
         } else {
             message = success ? "Оплата прошла успешно" : "Закрытие экрана оплаты";
         }
@@ -227,7 +232,6 @@ public class TinkoffSdkPlugin implements MethodCallHandler, FlutterPlugin, Activ
             final Map<String, Object> arguments = (Map<String, Object>) call.arguments;
             // Get activation parameters.
             final String terminalKey = (String) arguments.get("terminalKey");
-            final String password = (String) arguments.get("password");
             final String publicKey = (String) arguments.get("publicKey");
             final boolean nativePay = (boolean) arguments.get("nativePay");
             final boolean isDeveloperMode = (boolean) arguments.get("isDeveloperMode");

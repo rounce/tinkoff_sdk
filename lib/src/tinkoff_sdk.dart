@@ -22,9 +22,7 @@ class TinkoffSdk {
   static TinkoffSdk? _instance;
 
   factory TinkoffSdk() {
-    if (_instance == null) {
-      _instance = TinkoffSdk._private(const MethodChannel(Method.channel));
-    }
+    _instance ??= TinkoffSdk._private(const MethodChannel(Method.channel));
     return _instance!;
   }
 
@@ -39,7 +37,6 @@ class TinkoffSdk {
   /// Данные для активации выдаются в личном кабинете после подключения к ​Интернет-Эквайрингу.​
   ///
   /// [terminalKey] - Терминал Продавца.
-  /// [password] - Пароль от терминала.
   /// [publicKey] - Публичный ключ. Используется для шифрования данных.
   ///               Необходим для интеграции вашего приложения с интернет-эквайрингом Тинькофф.
   ///
@@ -51,18 +48,16 @@ class TinkoffSdk {
   /// [logging] - Логирование запросов.
   Future<bool> activate({
     required String terminalKey,
-    required String password,
     required String publicKey,
     bool configureNativePay = false,
     LocalizationSource language = LocalizationSource.ru,
     bool isDeveloperMode = false,
     bool logging = false,
   }) async {
-    final method = Method.activate;
+    const method = Method.activate;
 
     final arguments = <String, dynamic>{
       method.terminalKey: terminalKey,
-      method.password: password,
       method.publicKey: publicKey,
       method.nativePay: configureNativePay,
       method.isDeveloperMode: isDeveloperMode,
@@ -70,14 +65,14 @@ class TinkoffSdk {
       method.language: localizationString(language)
     };
 
-    final activated =
-        await _channel.invokeMethod<bool>(method.name, arguments) ?? false;
+    final activated = await _channel.invokeMethod<bool>(method.name, arguments) ?? false;
 
-    if (activated)
+    if (activated) {
       _terminalKey = terminalKey;
-    else
+    } else {
       throw 'Cannot activate TinkoffSDK.'
           '\nOne or more of parameters are invalid.';
+    }
 
     return activated;
   }
@@ -85,15 +80,13 @@ class TinkoffSdk {
   Future<List<CardData>> getCardList(String customerKey) async {
     _checkActivated();
 
-    final method = Method.getCardList;
+    const method = Method.getCardList;
 
     final arguments = <String, dynamic>{
       method.customerKey: customerKey,
     };
 
-    return _channel
-        .invokeMethod(method.name, arguments)
-        .then(parseCardListResult);
+    return _channel.invokeMethod(method.name, arguments).then(parseCardListResult);
   }
 
   /// Открытие экрана оплаты.
@@ -109,7 +102,7 @@ class TinkoffSdk {
   }) async {
     _checkActivated();
 
-    final method = Method.openPaymentScreen;
+    const method = Method.openPaymentScreen;
 
     final arguments = <String, dynamic>{
       method.orderOptions: orderOptions._arguments(),
@@ -117,9 +110,7 @@ class TinkoffSdk {
       method.featuresOptions: featuresOptions._arguments(),
     };
 
-    return _channel
-        .invokeMethod(method.name, arguments)
-        .then(parseTinkoffResult);
+    return _channel.invokeMethod(method.name, arguments).then(parseTinkoffResult);
   }
 
   /// Открытие экрана привязки карт.
@@ -132,7 +123,7 @@ class TinkoffSdk {
   }) async {
     _checkActivated();
 
-    final method = Method.attachCardScreen;
+    const method = Method.attachCardScreen;
 
     final arguments = <String, dynamic>{
       method.customerOptions: customerOptions._arguments(),
@@ -148,15 +139,14 @@ class TinkoffSdk {
   /// соответственно [Completer] завершается только при ошибке либо отмене (закрытии экрана).
   Future<TinkoffResult> showSBPQrScreen() async {
     _checkActivated();
-    final method = Method.showQrScreen;
+    const method = Method.showQrScreen;
 
     return _channel.invokeMethod(method.name).then(parseTinkoffResult);
   }
 
   Future<bool> get isNativePayAvailable async {
     _checkActivated();
-    final result =
-        await _channel.invokeMethod<bool>(Method.isNativePayAvailable.name);
+    final result = await _channel.invokeMethod<bool>(Method.isNativePayAvailable.name);
     return result ?? false;
   }
 
@@ -168,7 +158,7 @@ class TinkoffSdk {
     _checkActivated();
     if (!await isNativePayAvailable) throw "Native payments isn't available.";
 
-    final method = Method.openNativePayment;
+    const method = Method.openNativePayment;
 
     final arguments = <String, dynamic>{
       method.orderOptions: orderOptions._arguments(),
@@ -176,21 +166,17 @@ class TinkoffSdk {
       method.merchantId: merchantId ?? '',
     };
 
-    return _channel
-        .invokeMethod(method.name, arguments)
-        .then(parseTinkoffResult);
+    return _channel.invokeMethod(method.name, arguments).then(parseTinkoffResult);
   }
 
   // TODO: implement Charge
   Future<TinkoffResult> startCharge() async {
     _checkActivated();
-    final method = Method.startCharge;
+    const method = Method.startCharge;
 
     final arguments = <String, dynamic>{};
 
-    return _channel
-        .invokeMethod(method.name, arguments)
-        .then(parseTinkoffResult);
+    return _channel.invokeMethod(method.name, arguments).then(parseTinkoffResult);
   }
 
   void _checkActivated() {
