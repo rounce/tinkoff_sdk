@@ -185,13 +185,13 @@ public class TinkoffSdkPlugin implements MethodCallHandler, FlutterPlugin, Activ
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         if (this.result != null) return;
-        if (!(activity instanceof FragmentActivity)) {
+        /*if (!(activity instanceof FragmentActivity)) {
             result.error(
             "no_fragment_activity",
             "plugin requires activity to be a FragmentActivity.",
             null);
             return;
-        }
+        }*/
 
         this.result = result;
 
@@ -342,7 +342,7 @@ public class TinkoffSdkPlugin implements MethodCallHandler, FlutterPlugin, Activ
             final PaymentOptions paymentOptions = parser.createPaymentOptions(arguments);
 
             tinkoffAcquiring.openPaymentScreen(
-                (FragmentActivity) activity,
+                activity,
                 paymentOptions,
                 PAYMENT_REQUEST_CODE,
                 DefaultState.INSTANCE
@@ -362,7 +362,7 @@ public class TinkoffSdkPlugin implements MethodCallHandler, FlutterPlugin, Activ
             final SavedCardsOptions options = parser.createSavedCardOptions(arguments);
 
             tinkoffAcquiring.openSavedCardsScreen(
-                (FragmentActivity) activity,
+                activity,
                 options,
                 ATTACH_CARD_REQUEST_CODE
             );
