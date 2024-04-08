@@ -1,6 +1,6 @@
 /*
 
-  Copyright © 2020 ProgressiveMobile
+  Copyright © 2024 ProgressiveMobile
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -40,17 +40,12 @@ class TinkoffSdk {
   /// [publicKey] - Публичный ключ. Используется для шифрования данных.
   ///               Необходим для интеграции вашего приложения с интернет-эквайрингом Тинькофф.
   ///
-  /// [configureNativePay] отвечает за возможность проведения оплат через Google Pay / ApplePay.
-  /// [language] - Язык
-  ///
   /// Флаги ниже используются для тестирования настроек эквайринга:
   /// [isDeveloperMode] - Тестовый URL (в этом режиме деньги с карт не списываются).
   /// [logging] - Логирование запросов.
   Future<bool> activate({
     required String terminalKey,
     required String publicKey,
-    bool configureNativePay = false,
-    LocalizationSource language = LocalizationSource.ru,
     bool isDeveloperMode = false,
     bool logging = false,
   }) async {
@@ -59,10 +54,8 @@ class TinkoffSdk {
     final arguments = <String, dynamic>{
       method.terminalKey: terminalKey,
       method.publicKey: publicKey,
-      method.nativePay: configureNativePay,
       method.isDeveloperMode: isDeveloperMode,
-      method.isDebug: logging,
-      method.language: localizationString(language)
+      method.logging: logging,
     };
 
     final activated = await _channel.invokeMethod<bool>(method.name, arguments) ?? false;
@@ -77,16 +70,26 @@ class TinkoffSdk {
     return activated;
   }
 
-  Future<List<CardData>> getCardList(String customerKey) async {
+  /// Открытие экрана списка привязанных карт
+  Future<void> getCardList({
+    required String terminalKey,
+    required String publicKey,
+    required CustomerOptions customerOptions,
+    FeaturesOptions featuresOptions = const FeaturesOptions(),
+  }) async {
     _checkActivated();
 
     const method = Method.getCardList;
 
     final arguments = <String, dynamic>{
-      method.customerKey: customerKey,
-    };
+      method.terminalKey: terminalKey,
+      method.publicKey: publicKey,
+      method.customerOptions: customerOptions.arguments,
+      method.featuresOptions: featuresOptions.arguments,
+    }..removeWhere((key, value) => value == null);
 
-    return _channel.invokeMethod(method.name, arguments).then(parseCardListResult);
+    return _channel
+        .invokeMethod(method.name, arguments);
   }
 
   /// Открытие экрана оплаты.
@@ -94,30 +97,44 @@ class TinkoffSdk {
   /// в случае ошибки либо отмены вернет [false].
   ///
   /// Подробное описание параметров см. в реализации
-  /// [OrderOptions], [CustomerOptions], [FeaturesOptions].
+  /// [OrderOptions], [CustomerOptions], [FeaturesOptions], [Receipt].
   Future<TinkoffResult> openPaymentScreen({
+    required String terminalKey,
+    required String publicKey,
     required OrderOptions orderOptions,
     required CustomerOptions customerOptions,
     FeaturesOptions featuresOptions = const FeaturesOptions(),
+    AndroidReceipt? androidReceipt,
+    IosReceipt? iosReceipt,
   }) async {
     _checkActivated();
 
-    const method = Method.openPaymentScreen;
+    final method = Method.openPaymentScreen;
+    String? ffdVersion;
+    if (androidReceipt?.runtimeType == AndroidReceiptFfd105) {
+      ffdVersion = "105";
+    } else if (androidReceipt?.runtimeType == AndroidReceiptFfd12) {
+      ffdVersion = "12";
+    }
 
     final arguments = <String, dynamic>{
-      method.orderOptions: orderOptions._arguments(),
-      method.customerOptions: customerOptions._arguments(),
-      method.featuresOptions: featuresOptions._arguments(),
-    };
+      method.orderOptions: orderOptions.arguments,
+      method.customerOptions: customerOptions.arguments,
+      method.featuresOptions: featuresOptions.arguments,
+      method.receipt:
+          Platform.isIOS ? iosReceipt?.arguments : androidReceipt?.arguments,
+      method.terminalKey: terminalKey,
+      method.publicKey: publicKey,
+      method.ffdVersion: ffdVersion,
+    }..removeWhere((key, value) => value == null);
 
     return _channel.invokeMethod(method.name, arguments).then(parseTinkoffResult);
   }
 
-  /// Открытие экрана привязки карт.
-  ///
-  /// Подробное описание параметров см. в реализации
-  /// [CustomerOptions], [FeaturesOptions].
+  /// Открытие экрана привязки карт
   Future<void> openAttachCardScreen({
+    required String terminalKey,
+    required String publicKey,
     required CustomerOptions customerOptions,
     FeaturesOptions featuresOptions = const FeaturesOptions(),
   }) async {
@@ -126,47 +143,89 @@ class TinkoffSdk {
     const method = Method.attachCardScreen;
 
     final arguments = <String, dynamic>{
-      method.customerOptions: customerOptions._arguments(),
-      method.featuresOptions: featuresOptions._arguments()
-    };
+      method.terminalKey: terminalKey,
+      method.publicKey: publicKey,
+      method.customerOptions: customerOptions.arguments,
+      method.featuresOptions: featuresOptions.arguments,
+    }..removeWhere((key, value) => value == null);
 
     return _channel.invokeMethod(method.name, arguments);
   }
 
-  /// Экран приема оплаты по QR коду через СПБ.
+  /// Отображает экран с многоразовым `QR-кодом`, отсканировав который,
+  /// пользователь сможет провести оплату с помощью `Системы быстрых платежей`
   ///
-  /// Результат оплаты товара покупателем по статическому QR коду не отслеживается в SDK,
+  /// При данном типе оплаты SDK никак не отслеживает статус платежа,
   /// соответственно [Completer] завершается только при ошибке либо отмене (закрытии экрана).
-  Future<TinkoffResult> showSBPQrScreen() async {
-    _checkActivated();
-    const method = Method.showQrScreen;
-
-    return _channel.invokeMethod(method.name).then(parseTinkoffResult);
-  }
-
-  Future<bool> get isNativePayAvailable async {
-    _checkActivated();
-    final result = await _channel.invokeMethod<bool>(Method.isNativePayAvailable.name);
-    return result ?? false;
-  }
-
-  Future<TinkoffResult> openNativePaymentScreen({
-    required OrderOptions orderOptions,
-    required CustomerOptions customerOptions,
-    String? merchantId,
+  Future<void> showStaticQRCode({
+    FeaturesOptions? featuresOptions,
   }) async {
     _checkActivated();
-    if (!await isNativePayAvailable) throw "Native payments isn't available.";
-
-    const method = Method.openNativePayment;
+    final method = Method.showStaticQrScreen;
 
     final arguments = <String, dynamic>{
-      method.orderOptions: orderOptions._arguments(),
-      method.customerOptions: customerOptions._arguments(),
-      method.merchantId: merchantId ?? '',
+      method.featuresOptions:
+          featuresOptions?.arguments ?? FeaturesOptions().arguments,
     };
 
     return _channel.invokeMethod(method.name, arguments).then(parseTinkoffResult);
+  }
+
+  /// Отображает экран с одноразовым `QR-кодом`, отсканировав который,
+  /// пользователь сможет провести оплату  с помощью `Системы быстрых платежей`
+  ///
+  /// При данном типе оплаты сумма и информация о платеже фиксируется,
+  /// и SDK способен получить и обработать статус платежа
+  Future<TinkoffResult> showDynamicQRCode({
+    required AndroidDynamicQrCode androidDynamicQrCode,
+    required IosDynamicQrCode iOSDynamicQrCode,
+  }) async {
+    _checkActivated();
+    final method = Method.showDynamicQrScreen;
+
+    late final Map<String, dynamic> arguments;
+
+    if (Platform.isIOS) {
+      switch (iOSDynamicQrCode.runtimeType) {
+        case IosDynamicQrCodeFullPaymentFlow:
+          final code = iOSDynamicQrCode as IosDynamicQrCodeFullPaymentFlow;
+          arguments = {
+            method.orderOptions: code.orderOptions.arguments,
+            method.customerOptions: code.customerOptions?.arguments,
+            method.successUrl: code.successUrl,
+            method.failureUrl: code.failureUrl,
+            method.paymentData: code.paymentData,
+            method.paymentFlow: PaymentFlow.full.name,
+          };
+          break;
+        case IosDynamicQrCodeFinishPaymentFlow:
+          final code = iOSDynamicQrCode as IosDynamicQrCodeFinishPaymentFlow;
+          arguments = {
+            method.paymentId: code.paymentId,
+            method.amount: code.amount,
+            method.orderId: code.orderId,
+            method.customerOptions: code.customerOptions?.arguments,
+            method.paymentFlow: PaymentFlow.finish.name,
+          };
+          break;
+      }
+    } else {
+      arguments = {
+        method.terminalKey: androidDynamicQrCode.terminalKey,
+        method.publicKey: androidDynamicQrCode.publicKey,
+        method.orderOptions: androidDynamicQrCode.orderOptions.arguments,
+        method.customerOptions: androidDynamicQrCode.customerOptions.arguments,
+        method.paymentId: androidDynamicQrCode.paymentId,
+        method.featuresOptions: androidDynamicQrCode.featuresOptions?.arguments,
+      };
+    }
+
+    return _channel
+        .invokeMethod(
+          method.name,
+          arguments..removeWhere((key, value) => value == null),
+        )
+        .then(parseTinkoffResult);
   }
 
   // TODO: implement Charge
