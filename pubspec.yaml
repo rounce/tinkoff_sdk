@@ -21,3 +21,5 @@ flutter:
       android:
         package: tech.pmobi.tinkoff_sdk
         pluginClass: TinkoffSdkPlugin
+      ios:
+        pluginClass: TinkoffSdkPlugin
