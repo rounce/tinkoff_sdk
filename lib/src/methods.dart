@@ -1,6 +1,6 @@
 /*
 
-  Copyright © 2024 ProgressiveMobile
+  Copyright © 2020 ProgressiveMobile
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@
 
 class Method {
   static const channel = 'tinkoff_sdk';
-  static const Activate activate = const Activate();
-  static const OpenPaymentScreen openPaymentScreen = const OpenPaymentScreen();
-  static const AttachCardScreen attachCardScreen = const AttachCardScreen();
-  static const ShowStaticQrScreen showStaticQrScreen =
-      const ShowStaticQrScreen();
-  static const ShowDynamicQrScreen showDynamicQrScreen =
-      const ShowDynamicQrScreen();
-  static const StartCharge startCharge = const StartCharge();
-  static const GetCardList getCardList = const GetCardList();
+  static const Activate activate = Activate();
+  static const OpenPaymentScreen openPaymentScreen = OpenPaymentScreen();
+  static const AttachCardScreen attachCardScreen = AttachCardScreen();
+  static const ShowQrScreen showQrScreen = ShowQrScreen();
+  static const IsNativePayAvailable isNativePayAvailable =
+      IsNativePayAvailable();
+  static const OpenNativePayment openNativePayment = OpenNativePayment();
+  static const StartCharge startCharge = StartCharge();
+  static const GetCardList getCardList = GetCardList();
 }
 
 class Activate {
@@ -38,9 +38,11 @@ class Activate {
 
   String get terminalKey => 'terminalKey';
   String get publicKey => 'publicKey';
+  String get nativePay => 'nativePay';
 
   String get isDeveloperMode => 'isDeveloperMode';
-  String get logging => 'logging';
+  String get isDebug => 'isDebug';
+  String get language => 'language';
 }
 
 class OpenPaymentScreen {
@@ -51,11 +53,6 @@ class OpenPaymentScreen {
   String get orderOptions => 'orderOptions';
   String get customerOptions => 'customerOptions';
   String get featuresOptions => 'featuresOptions';
-  String get receipt => 'receipt';
-  String get token => 'token';
-  String get terminalKey => 'terminalKey';
-  String get publicKey => 'publicKey';
-  String get ffdVersion => 'ffdVersion';
 }
 
 class AttachCardScreen {
@@ -63,36 +60,32 @@ class AttachCardScreen {
 
   String get name => 'attachCardScreen';
 
-  String get terminalKey => 'terminalKey';
-  String get publicKey => 'publicKey';
   String get customerOptions => 'customerOptions';
   String get featuresOptions => 'featuresOptions';
 }
 
-class ShowStaticQrScreen {
-  const ShowStaticQrScreen();
+class ShowQrScreen {
+  const ShowQrScreen();
 
-  String get name => 'showStaticQrScreen';
-  String get featuresOptions => 'featuresOptions';
+  String get name => 'showQrScreen';
+
+  String get localization => 'localizationSource';
 }
 
-class ShowDynamicQrScreen {
-  const ShowDynamicQrScreen();
+class IsNativePayAvailable {
+  const IsNativePayAvailable();
 
-  String get name => 'showDynamicQrScreen';
+  String get name => 'isNativePayAvailable';
+}
 
-  String get terminalKey => 'terminalKey';
-  String get publicKey => 'publicKey';
-  String get paymentFlow => 'paymentFlow';
+class OpenNativePayment {
+  const OpenNativePayment();
+
+  String get name => 'openNativePayment';
+
   String get orderOptions => 'orderOptions';
   String get customerOptions => 'customerOptions';
-  String get featuresOptions => 'featuresOptions';
-  String get paymentId => 'paymentId';
-  String get amount => 'amount';
-  String get orderId => 'orderId';
-  String get successUrl => 'successUrl';
-  String get failureUrl => 'failureUrl';
-  String get paymentData => 'paymentData';
+  String get merchantId => 'merchantId';
 }
 
 class StartCharge {
@@ -106,8 +99,5 @@ class GetCardList {
 
   String get name => 'cardList';
 
-  String get terminalKey => 'terminalKey';
-  String get publicKey => 'publicKey';
-  String get customerOptions => 'customerOptions';
-  String get featuresOptions => 'featuresOptions';
+  String get customerKey => 'customerKey';
 }

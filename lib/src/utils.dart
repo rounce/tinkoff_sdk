@@ -1,6 +1,6 @@
 /*
 
-  Copyright © 2024 ProgressiveMobile
+  Copyright © 2020 ProgressiveMobile
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -40,4 +40,58 @@ List<CardData> parseCardListResult(dynamic result) {
   }
 
   return cards;
+}
+
+String checkTypeString(CheckType type) {
+  switch (type) {
+    case CheckType.hold:
+      {
+        return 'HOLD';
+      }
+    case CheckType.threeDS:
+      {
+        return '3DS';
+      }
+    case CheckType.threeDSHold:
+      {
+        return '3DSHOLD';
+      }
+    case CheckType.no:
+    default:
+      {
+        return 'NO';
+      }
+  }
+}
+
+String darkThemeString(DarkThemeMode mode) {
+  switch (mode) {
+    case DarkThemeMode.enabled:
+      {
+        return 'ENABLED';
+      }
+    case DarkThemeMode.disabled:
+      {
+        return 'DISABLED';
+      }
+    case DarkThemeMode.auto:
+    default:
+      {
+        return 'AUTO';
+      }
+  }
+}
+
+String localizationString(LocalizationSource source) {
+  switch (source) {
+    case LocalizationSource.en:
+      {
+        return 'EN';
+      }
+    case LocalizationSource.ru:
+    default:
+      {
+        return 'RU';
+      }
+  }
 }
